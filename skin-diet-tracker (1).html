@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f9f8f5">
+<title>Skin & Diet Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f9f8f5;
+    --surface: #ffffff;
+    --surface2: #f2f0eb;
+    --border: #e4e0d8;
+    --text: #1c1a16;
+    --text2: #6b6760;
+    --text3: #9e9b95;
+    --sage: #3d6b4f;
+    --sage-light: #e6f0ea;
+    --peach: #c9673c;
+    --peach-light: #fdf0ea;
+    --info: #1a5fa8;
+    --info-bg: #e8f0fb;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --nav-h: 60px;
+    --header-h: 56px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161410;
+      --surface: #1f1d18;
+      --surface2: #2a2820;
+      --border: #3a3830;
+      --text: #f0ede6;
+      --text2: #a09d95;
+      --text3: #6b6860;
+      --sage: #5a9970;
+      --sage-light: #1a2e20;
+      --peach: #e0845a;
+      --peach-light: #2a1a10;
+      --info: #5b9fd4;
+      --info-bg: #0d1e30;
+      --warn: #f59e0b;
+      --warn-bg: #2a1e08;
+    }
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.5; overflow: hidden; }
+
+  .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+  .header { height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; }
+  .header-icon { width: 34px; height: 34px; background: var(--sage-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .header-icon svg { width: 18px; height: 18px; stroke: var(--sage); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .header-title { font-size: 17px; font-weight: 600; color: var(--text); }
+  .header-sub { font-size: 12px; color: var(--text2); }
+
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-h) + 16px); }
+
+  .bottom-nav { height: var(--nav-h); background: var(--surface); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; color: var(--text3); font-size: 10px; cursor: pointer; transition: color 0.15s; padding: 6px 0; }
+  .nav-item.active { color: var(--sage); }
+  .nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  .section { display: none; padding: 0 0 8px; }
+  .section.active { display: block; }
+
+  .date-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+  .date-label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .date-nav { display: flex; align-items: center; gap: 6px; }
+  .date-arrow { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .date-arrow svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .today-btn { font-size: 12px; font-weight: 500; padding: 0 10px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--info); cursor: pointer; white-space: nowrap; }
+
+  .card { background: var(--surface); border-radius: var(--radius-lg); margin: 12px 12px 0; overflow: hidden; border: 1px solid var(--border); }
+  .card-header { padding: 12px 14px 0; display: flex; align-items: center; gap: 8px; }
+  .card-header svg { width: 17px; height: 17px; stroke: var(--sage); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .card-body { padding: 12px 14px 14px; }
+
+  .form-group { margin-bottom: 12px; }
+  .form-group:last-child { margin-bottom: 0; }
+  label.field-label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  textarea, input[type="text"] { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 15px; background: var(--bg); color: var(--text); font-family: inherit; resize: none; -webkit-appearance: none; appearance: none; outline: none; transition: border-color 0.15s; }
+  textarea:focus, input[type="text"]:focus { border-color: var(--sage); }
+  textarea { min-height: 72px; }
+
+  /* Trigger warning banner under food textareas */
+  .trigger-alert { display: none; margin-top: 6px; background: var(--warn-bg); border: 1px solid var(--warn); border-radius: var(--radius-sm); padding: 7px 10px; font-size: 12px; color: var(--warn); line-height: 1.4; }
+  .trigger-alert.visible { display: block; }
+  .trigger-alert strong { font-weight: 600; }
+
+  /* Tag input */
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--bg); min-height: 44px; transition: border-color 0.15s; }
+  .tag-wrap:focus-within { border-color: var(--sage); }
+  .tag-wrap input { border: none; outline: none; background: transparent; font-size: 15px; color: var(--text); font-family: inherit; flex: 1; min-width: 120px; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--sage-light); border-radius: 20px; padding: 4px 10px; font-size: 13px; color: var(--sage); }
+  .tag-remove { background: none; border: none; cursor: pointer; color: var(--sage); font-size: 16px; line-height: 1; padding: 0 0 0 2px; display: flex; align-items: center; }
+
+  /* Body map */
+  .body-section { display: flex; gap: 14px; align-items: flex-start; }
+  .body-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .body-svg-wrap { width: 120px; }
+  .body-svg-wrap svg { width: 100%; height: auto; }
+  .body-zone { cursor: pointer; fill: var(--surface2); stroke: var(--border); stroke-width: 1.2; transition: fill 0.15s, stroke 0.15s; }
+  .body-zone:active { opacity: 0.7; }
+  /* 5-level intensity colours on SVG zones */
+  .body-zone.s1 { fill: #fef9c3; stroke: #ca8a04; }
+  .body-zone.s2 { fill: #fde68a; stroke: #d97706; }
+  .body-zone.s3 { fill: #fed7aa; stroke: #ea580c; }
+  .body-zone.s4 { fill: #fca5a5; stroke: #dc2626; }
+  .body-zone.s5 { fill: #ef4444; stroke: #991b1b; }
+  .map-hint { font-size: 11px; color: var(--text3); text-align: center; }
+  .map-legend { display: flex; flex-direction: column; gap: 3px; }
+  .legend-row { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .flare-col { flex: 1; min-width: 0; }
+  .flare-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 6px; }
+  .flare-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 7px; }
+  .intensity-row { display: flex; align-items: center; gap: 4px; justify-content: space-between; }
+  .int-btns { display: flex; gap: 3px; flex-wrap: nowrap; }
+  /* 5 buttons — narrower to fit */
+  .int-btn { width: 28px; height: 26px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); font-size: 10px; font-weight: 700; color: var(--text2); cursor: pointer; padding: 0; }
+  .int-btn.a1 { background: #fef9c3; color: #713f12; border-color: #ca8a04; }
+  .int-btn.a2 { background: #fde68a; color: #713f12; border-color: #d97706; }
+  .int-btn.a3 { background: #fed7aa; color: #7c2d12; border-color: #ea580c; }
+  .int-btn.a4 { background: #fca5a5; color: #7f1d1d; border-color: #dc2626; }
+  .int-btn.a5 { background: #ef4444; color: #fff; border-color: #991b1b; }
+  .flare-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 20px; line-height: 1; padding: 2px; flex-shrink: 0; }
+  .flare-empty { font-size: 13px; color: var(--text3); padding: 4px 0; }
+
+  /* 5-level flare badges in history */
+  .flare-badge { display: inline-flex; border-radius: 20px; padding: 2px 8px; font-size: 11px; margin: 2px 2px 0 0; }
+  .fb-1 { background: #fef9c3; color: #713f12; }
+  .fb-2 { background: #fde68a; color: #713f12; }
+  .fb-3 { background: #fed7aa; color: #7c2d12; }
+  .fb-4 { background: #fca5a5; color: #7f1d1d; }
+  .fb-5 { background: #ef4444; color: #fff; }
+
+  .save-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 24px); margin: 14px 12px 4px; padding: 14px; background: var(--sage); color: #fff; border: none; border-radius: var(--radius-md); font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; -webkit-appearance: none; transition: opacity 0.15s; }
+  .save-btn:active { opacity: 0.85; transform: scale(0.99); }
+  .save-btn svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .toast { position: fixed; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 100px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.25s; z-index: 999; white-space: nowrap; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Summary */
+  .period-bar { display: flex; padding: 12px 12px 0; gap: 6px; }
+  .period-btn { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .period-btn.active { background: var(--sage); color: #fff; border-color: var(--sage); }
+
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 12px 0; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; }
+  .metric-label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.1; }
+
+  .chart-card-body { padding: 10px 10px 14px; }
+  .chart-wrap { position: relative; width: 100%; height: 180px; }
+  .chart-wrap.tall { height: 220px; }
+
+  /* Trigger correlation section */
+  .trigger-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .trigger-row:last-child { border-bottom: none; }
+  .trigger-name { flex: 1; font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trigger-bar-wrap { width: 80px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .trigger-bar { height: 100%; border-radius: 4px; background: var(--peach); }
+  .trigger-count { font-size: 12px; color: var(--text2); min-width: 28px; text-align: right; flex-shrink: 0; }
+  .trigger-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); flex-shrink: 0; border: 1px solid var(--warn); }
+
+  .food-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+  .food-pill { background: var(--sage-light); color: var(--sage); border-radius: 20px; padding: 5px 11px; font-size: 13px; }
+  .food-pill span { opacity: 0.6; font-size: 11px; }
+  .food-pill.trigger-pill { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
+
+  /* History */
+  .history-list { padding: 8px 12px; }
+  .hist-entry { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 8px; }
+  .hist-date { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .hist-row { display: flex; gap: 8px; margin-bottom: 5px; align-items: flex-start; }
+  .hist-icon { flex-shrink: 0; margin-top: 1px; }
+  .hist-icon svg { width: 14px; height: 14px; stroke: var(--text2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .hist-val { font-size: 13px; color: var(--text2); line-height: 1.4; }
+
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-state svg { width: 40px; height: 40px; stroke: var(--text3); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  .section-note { font-size: 12px; color: var(--text3); padding: 6px 14px 0; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 5-9 13-9 13S3 16 3 11a9 9 0 0 1 9-9z"/><circle cx="12" cy="11" r="3"/></svg>
+    </div>
+    <div>
+      <div class="header-title">Skin & Diet Tracker</div>
+      <div class="header-sub">Daily skin condition log</div>
+    </div>
+  </header>
+
+  <div class="scroll-area" id="scroll-area">
+
+    <!-- LOG TAB -->
+    <div id="tab-log" class="section active">
+      <div class="date-bar">
+        <span class="date-label" id="date-label">Today</span>
+        <div class="date-nav">
+          <button class="date-arrow" onclick="changeDay(-1)" aria-label="Previous day"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="today-btn" onclick="goToday()">Today</button>
+          <button class="date-arrow" onclick="changeDay(1)" aria-label="Next day"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Food -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          <span class="card-title">Food & drinks</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="field-label" for="meal-breakfast">Breakfast</label>
+            <textarea id="meal-breakfast" placeholder="e.g. oats, berries, green tea…" oninput="checkTriggers('breakfast')"></textarea>
+            <div class="trigger-alert" id="alert-breakfast"></div>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="meal-lunch">Lunch</label>
+            <textarea id="meal-lunch" placeholder="e.g. grilled chicken salad…" oninput="checkTriggers('lunch')"></textarea>
+            <div class="trigger-alert" id="alert-lunch"></div>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="meal-dinner">Dinner</label>
+            <textarea id="meal-dinner" placeholder="e.g. salmon, rice, broccoli…" oninput="checkTriggers('dinner')"></textarea>
+            <div class="trigger-alert" id="alert-dinner"></div>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="meal-snacks">Snacks</label>
+            <textarea id="meal-snacks" placeholder="e.g. almonds, coffee, apple…" oninput="checkTriggers('snacks')"></textarea>
+            <div class="trigger-alert" id="alert-snacks"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meds taken -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg>
+          <span class="card-title">Medications & supplements taken</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="field-label">Items (type and press Done/Return)</label>
+            <div class="tag-wrap" id="meds-wrap"><input type="text" id="meds-input" placeholder="e.g. Vitamin D, antihistamine…" inputmode="text" enterkeyhint="done"></div>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="meds-notes">Notes</label>
+            <textarea id="meds-notes" placeholder="Dosage, timing…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Creams -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8 2 4 6 4 10c0 6 8 12 8 12s8-6 8-12c0-4-4-8-8-8z"/></svg>
+          <span class="card-title">Creams & topical treatments</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="field-label">Products applied (type and press Done/Return)</label>
+            <div class="tag-wrap" id="creams-wrap"><input type="text" id="creams-input" placeholder="e.g. hydrocortisone, moisturiser…" inputmode="text" enterkeyhint="done"></div>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="cream-notes">Application notes</label>
+            <textarea id="cream-notes" placeholder="Where applied, AM/PM, frequency…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flare-ups -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="card-title">Flare-up locations & intensity</span>
+        </div>
+        <div class="card-body">
+          <div class="body-section">
+            <div class="body-col">
+              <div class="body-svg-wrap">
+                <svg id="body-svg" viewBox="0 0 100 210" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse class="body-zone" id="zone-face" cx="50" cy="16" rx="14" ry="14" onclick="tap('face','Face')"/>
+                  <rect class="body-zone" id="zone-neck" x="43" y="31" width="14" height="10" rx="3" onclick="tap('neck','Neck')"/>
+                  <rect class="body-zone" id="zone-chest" x="29" y="42" width="42" height="26" rx="5" onclick="tap('chest','Chest')"/>
+                  <rect class="body-zone" id="zone-abdomen" x="30" y="69" width="40" height="22" rx="4" onclick="tap('abdomen','Abdomen')"/>
+                  <rect class="body-zone" id="zone-l-arm" x="10" y="44" width="17" height="36" rx="5" onclick="tap('l-arm','Left arm')"/>
+                  <rect class="body-zone" id="zone-r-arm" x="73" y="44" width="17" height="36" rx="5" onclick="tap('r-arm','Right arm')"/>
+                  <rect class="body-zone" id="zone-l-hand" x="8" y="81" width="20" height="13" rx="4" onclick="tap('l-hand','Left hand')"/>
+                  <rect class="body-zone" id="zone-r-hand" x="72" y="81" width="20" height="13" rx="4" onclick="tap('r-hand','Right hand')"/>
+                  <rect class="body-zone" id="zone-l-leg" x="25" y="93" width="19" height="60" rx="5" onclick="tap('l-leg','Left leg')"/>
+                  <rect class="body-zone" id="zone-r-leg" x="56" y="93" width="19" height="60" rx="5" onclick="tap('r-leg','Right leg')"/>
+                  <rect class="body-zone" id="zone-l-foot" x="18" y="154" width="26" height="13" rx="4" onclick="tap('l-foot','Left foot')"/>
+                  <rect class="body-zone" id="zone-r-foot" x="56" y="154" width="26" height="13" rx="4" onclick="tap('r-foot','Right foot')"/>
+                  <text x="50" y="18" text-anchor="middle" font-size="6" fill="#888" style="pointer-events:none">Face</text>
+                  <text x="50" y="57" text-anchor="middle" font-size="5.5" fill="#888" style="pointer-events:none">Chest</text>
+                  <text x="50" y="82" text-anchor="middle" font-size="5" fill="#888" style="pointer-events:none">Abdomen</text>
+                  <text x="18" y="65" text-anchor="middle" font-size="5" fill="#888" style="pointer-events:none">L arm</text>
+                  <text x="82" y="65" text-anchor="middle" font-size="5" fill="#888" style="pointer-events:none">R arm</text>
+                  <text x="34" y="126" text-anchor="middle" font-size="5" fill="#888" style="pointer-events:none">L leg</text>
+                  <text x="66" y="126" text-anchor="middle" font-size="5" fill="#888" style="pointer-events:none">R leg</text>
+                </svg>
+              </div>
+              <p class="map-hint">Tap to mark flare-up</p>
+              <div class="map-legend">
+                <div class="legend-row"><div class="legend-dot" style="background:#fef9c3;border:1px solid #ca8a04"></div>1 – Minimal</div>
+                <div class="legend-row"><div class="legend-dot" style="background:#fde68a;border:1px solid #d97706"></div>2 – Mild</div>
+                <div class="legend-row"><div class="legend-dot" style="background:#fed7aa;border:1px solid #ea580c"></div>3 – Moderate</div>
+                <div class="legend-row"><div class="legend-dot" style="background:#fca5a5;border:1px solid #dc2626"></div>4 – Severe</div>
+                <div class="legend-row"><div class="legend-dot" style="background:#ef4444;border:1px solid #991b1b"></div>5 – Very severe</div>
+              </div>
+            </div>
+            <div class="flare-col" id="flare-list">
+              <p class="flare-empty">Tap body zones to log flare-ups</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span class="card-title">Notes</span>
+        </div>
+        <div class="card-body">
+          <textarea id="daily-notes" placeholder="Sleep quality, stress level, weather, water intake…" style="min-height:80px"></textarea>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveDay()">
+        <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save log
+      </button>
+    </div>
+
+    <!-- SUMMARY TAB -->
+    <div id="tab-summary" class="section">
+      <div class="period-bar">
+        <button class="period-btn active" onclick="setPeriod('week',this)">This week</button>
+        <button class="period-btn" onclick="setPeriod('month',this)">This month</button>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">Days logged</div><div class="metric-value" id="m-days">0</div></div>
+        <div class="metric"><div class="metric-label">Flare-up days</div><div class="metric-value" id="m-flare">0</div></div>
+        <div class="metric"><div class="metric-label">Avg intensity</div><div class="metric-value" id="m-avg">—</div><div style="font-size:10px;color:var(--text3);margin-top:2px">out of 5</div></div>
+        <div class="metric"><div class="metric-label">Top zone</div><div class="metric-value" style="font-size:14px;line-height:1.3" id="m-zone">—</div></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="card-title">Flare-up intensity over time</span>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-wrap"><canvas id="intensity-chart" role="img" aria-label="Flare-up intensity line chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span class="card-title">Flare-ups by body zone</span>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-wrap"><canvas id="zone-chart" role="img" aria-label="Flare-up frequency by zone"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Trigger correlation -->
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="card-title">Possible food triggers</span>
+        </div>
+        <p class="section-note">Known eczema triggers found in your logs, ranked by average flare-up intensity on days they appeared. Requires multiple logged days to be meaningful.</p>
+        <div class="card-body" id="trigger-corr">
+          <p style="font-size:13px;color:var(--text3)">Not enough data yet.</p>
+        </div>
+      </div>
+
+      <!-- Trigger vs intensity chart -->
+      <div class="card" id="trigger-chart-card" style="display:none">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="card-title">Trigger food vs avg intensity</span>
+        </div>
+        <p class="section-note">Average flare intensity (1–5) on days each trigger food was eaten vs days it was not.</p>
+        <div class="chart-card-body">
+          <div class="chart-wrap tall"><canvas id="trigger-chart" role="img" aria-label="Trigger food vs intensity comparison chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          <span class="card-title">Frequently logged foods</span>
+        </div>
+        <div class="card-body">
+          <div class="food-cloud" id="food-cloud"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="tab-history" class="section">
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-log" onclick="switchTab('log')">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Log
+    </button>
+    <button class="nav-item" id="nav-summary" onclick="switchTab('summary')">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Summary
+    </button>
+    <button class="nav-item" id="nav-history" onclick="switchTab('history')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// ── Eczema trigger list ────────────────────────────────────────────────────
+// Each entry: { label, keywords[] }
+// keywords are matched as whole words (word-boundary) in the meal text
+const ECZEMA_TRIGGERS = [
+  { label: 'Dairy', keywords: ['milk','dairy','cheese','butter','cream','yogurt','yoghurt','lactose','whey','ghee','casein','ice cream','icecream'] },
+  { label: 'Eggs', keywords: ['egg','eggs'] },
+  { label: 'Gluten / wheat', keywords: ['wheat','gluten','bread','pasta','flour','noodles','noodle','cereal','biscuit','biscuits','cracker','crackers','pastry','croissant','muffin','waffle','pancake','roti','chapati','pita','pitta','bagel','couscous','semolina','barley','rye','spelt'] },
+  { label: 'Soy', keywords: ['soy','soya','tofu','miso','tempeh','edamame','soybean','soymilk'] },
+  { label: 'Peanuts', keywords: ['peanut','peanuts','groundnut','groundnuts','peanut butter'] },
+  { label: 'Tree nuts', keywords: ['almond','almonds','walnut','walnuts','cashew','cashews','pistachio','pistachios','pecan','pecans','hazelnut','hazelnuts','macadamia','brazil nut','pine nut','pine nuts'] },
+  { label: 'Shellfish', keywords: ['shrimp','prawn','prawns','crab','lobster','crayfish','scallop','scallops','clam','clams','mussel','mussels','oyster','oysters','shellfish'] },
+  { label: 'Fish', keywords: ['salmon','tuna','cod','sardine','sardines','mackerel','tilapia','trout','bass','halibut','anchovy','anchovies','herring','fish'] },
+  { label: 'Citrus', keywords: ['orange','oranges','lemon','lemons','lime','limes','grapefruit','tangerine','clementine','mandarin','citrus'] },
+  { label: 'Tomato', keywords: ['tomato','tomatoes','ketchup','tomato sauce','marinara','passata'] },
+  { label: 'Alcohol', keywords: ['alcohol','beer','wine','whisky','whiskey','vodka','gin','rum','sake','cider','lager','ale','spirits'] },
+  { label: 'Caffeine / coffee', keywords: ['coffee','espresso','caffeine','energy drink','red bull','monster','matcha','green tea'] },
+  { label: 'Spicy food', keywords: ['chilli','chili','spicy','hot sauce','sriracha','cayenne','pepper','jalapeño','jalapeno','harissa','curry','wasabi','tabasco'] },
+  { label: 'Sugar / sweets', keywords: ['sugar','sweets','candy','chocolate','cake','cookies','cookie','donut','doughnut','ice cream','icecream','syrup','honey','jam','jelly'] },
+  { label: 'Processed / fast food', keywords: ['chips','crisps','fast food','mcdonalds','kfc','burger','pizza','fried','nuggets','fries','processed'] },
+  { label: 'Nightshades', keywords: ['potato','potatoes','eggplant','aubergine','bell pepper','peppers','capsicum','goji'] },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let currentDate = new Date(); currentDate.setHours(0,0,0,0);
+let flareUps = {};
+let tags = { meds: [], creams: [] };
+let period = 'week';
+let iChart = null, zChart = null, tChart = null;
+
+// ── Storage ────────────────────────────────────────────────────────────────
+function getData() { try { return JSON.parse(localStorage.getItem('skinTracker') || '{}'); } catch { return {}; } }
+function setData(d) { localStorage.setItem('skinTracker', JSON.stringify(d)); }
+
+// ── Date helpers ───────────────────────────────────────────────────────────
+function dKey(d) { return d.toISOString().split('T')[0]; }
+function fmtLabel(d) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.round((d - t) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === -1) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function updateLabel() { document.getElementById('date-label').textContent = fmtLabel(currentDate); }
+function changeDay(n) { currentDate = new Date(currentDate.getTime() + n * 86400000); loadDay(); updateLabel(); }
+function goToday() { currentDate = new Date(); currentDate.setHours(0,0,0,0); loadDay(); updateLabel(); }
+
+// ── Trigger detection ──────────────────────────────────────────────────────
+function detectTriggers(text) {
+  if (!text) return [];
+  const lower = text.toLowerCase();
+  const found = [];
+  for (const trigger of ECZEMA_TRIGGERS) {
+    for (const kw of trigger.keywords) {
+      // match whole word or phrase
+      const re = new RegExp('(^|[\\s,;.(\\[])' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '($|[\\s,;.)\\]])', 'i');
+      if (re.test(lower)) { found.push(trigger.label); break; }
+    }
+  }
+  return [...new Set(found)];
+}
+
+function checkTriggers(meal) {
+  const text = document.getElementById('meal-' + meal).value;
+  const found = detectTriggers(text);
+  const alert = document.getElementById('alert-' + meal);
+  if (found.length) {
+    alert.innerHTML = '⚠️ <strong>Possible eczema triggers detected:</strong> ' + found.join(', ') + '. This is a known trigger food — worth monitoring.';
+    alert.classList.add('visible');
+  } else {
+    alert.classList.remove('visible');
+  }
+}
+
+function allMealText(entry) {
+  const m = entry.meals || {};
+  return [m.breakfast, m.lunch, m.dinner, m.snacks].filter(Boolean).join(' ');
+}
+
+// ── Tags ───────────────────────────────────────────────────────────────────
+function setupTag(type, inputId) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTag(type, input); } });
+  input.addEventListener('blur', () => { if (input.value.trim()) addTag(type, input); });
+}
+function addTag(type, input) {
+  const v = input.value.trim(); if (!v) return;
+  tags[type].push(v); input.value = ''; renderTags(type);
+}
+function removeTag(type, i) { tags[type].splice(i, 1); renderTags(type); }
+function renderTags(type) {
+  const wrapId = type === 'meds' ? 'meds-wrap' : 'creams-wrap';
+  const inputId = type === 'meds' ? 'meds-input' : 'creams-input';
+  const wrap = document.getElementById(wrapId);
+  const inp = document.getElementById(inputId);
+  wrap.querySelectorAll('.tag').forEach(t => t.remove());
+  tags[type].forEach((v, i) => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.innerHTML = `${v}<button class="tag-remove" onclick="removeTag('${type}',${i})" aria-label="Remove">×</button>`;
+    wrap.insertBefore(el, inp);
+  });
+}
+
+// ── Body map / flare-ups ───────────────────────────────────────────────────
+// 5-point scale labels
+const INT_LABELS = ['', 'Minimal', 'Mild', 'Moderate', 'Severe', 'Very severe'];
+
+function tap(id, name) {
+  if (flareUps[id]) { delete flareUps[id]; } else { flareUps[id] = { name, intensity: 1 }; }
+  renderFlares();
+}
+function setInt(id, level) { if (flareUps[id]) { flareUps[id].intensity = level; renderFlares(); } }
+function removeFlare(id) { delete flareUps[id]; renderFlares(); }
+
+function renderFlares() {
+  document.querySelectorAll('.body-zone').forEach(el => {
+    const id = el.id.replace('zone-', '');
+    el.classList.remove('s1','s2','s3','s4','s5');
+    if (flareUps[id]) el.classList.add('s' + flareUps[id].intensity);
+  });
+  const list = document.getElementById('flare-list');
+  const keys = Object.keys(flareUps);
+  if (!keys.length) { list.innerHTML = '<p class="flare-empty">Tap body zones to log flare-ups</p>'; return; }
+  list.innerHTML = keys.map(id => {
+    const f = flareUps[id];
+    const btns = [1,2,3,4,5].map(n =>
+      `<button class="int-btn ${f.intensity===n?'a'+n:''}" onclick="setInt('${id}',${n})" title="${INT_LABELS[n]}">${n}</button>`
+    ).join('');
+    return `<div class="flare-item">
+      <div class="flare-name">${f.name}</div>
+      <div class="intensity-row">
+        <div class="int-btns">${btns}</div>
+        <button class="flare-del" onclick="removeFlare('${id}')" aria-label="Remove">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Save / Load ────────────────────────────────────────────────────────────
+function saveDay() {
+  const key = dKey(currentDate);
+  const data = getData();
+  data[key] = {
+    meals: {
+      breakfast: document.getElementById('meal-breakfast').value,
+      lunch: document.getElementById('meal-lunch').value,
+      dinner: document.getElementById('meal-dinner').value,
+      snacks: document.getElementById('meal-snacks').value,
+    },
+    medsTaken: [...tags.meds],
+    medsNotes: document.getElementById('meds-notes').value,
+    creams: [...tags.creams],
+    creamNotes: document.getElementById('cream-notes').value,
+    flareUps: JSON.parse(JSON.stringify(flareUps)),
+    notes: document.getElementById('daily-notes').value,
+    savedAt: new Date().toISOString()
+  };
+  setData(data);
+  showToast('Log saved ✓');
+}
+
+function loadDay() {
+  const key = dKey(currentDate);
+  const d = getData()[key] || {};
+  const m = d.meals || {};
+  document.getElementById('meal-breakfast').value = m.breakfast || '';
+  document.getElementById('meal-lunch').value = m.lunch || '';
+  document.getElementById('meal-dinner').value = m.dinner || '';
+  document.getElementById('meal-snacks').value = m.snacks || '';
+  tags.meds = d.medsTaken || []; tags.creams = d.creams || [];
+  renderTags('meds'); renderTags('creams');
+  document.getElementById('meds-notes').value = d.medsNotes || '';
+  document.getElementById('cream-notes').value = d.creamNotes || '';
+  flareUps = d.flareUps ? JSON.parse(JSON.stringify(d.flareUps)) : {};
+  renderFlares();
+  document.getElementById('daily-notes').value = d.notes || '';
+  // Re-run trigger checks on load
+  ['breakfast','lunch','dinner','snacks'].forEach(checkTriggers);
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['log','summary','history'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('scroll-area').scrollTop = 0;
+  if (tab === 'summary') renderSummary();
+  if (tab === 'history') renderHistory();
+}
+
+// ── Period ─────────────────────────────────────────────────────────────────
+function setPeriod(p, btn) {
+  period = p;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSummary();
+}
+function periodDates() {
+  const n = period === 'week' ? 7 : 30;
+  const out = [];
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+    out.push(d);
+  }
+  return out;
+}
+
+// ── Avg intensity helper ───────────────────────────────────────────────────
+function avgIntensityForEntry(e) {
+  const fl = Object.values(e.flareUps || {});
+  if (!fl.length) return null;
+  return fl.reduce((s,f) => s + f.intensity, 0) / fl.length;
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const all = getData();
+  const dates = periodDates();
+  const entries = dates.map(d => ({ d, e: all[dKey(d)] })).filter(x => x.e);
+
+  document.getElementById('m-days').textContent = entries.length;
+  const allFlares = entries.flatMap(x => Object.values(x.e.flareUps || {}));
+  const avg = allFlares.length ? (allFlares.reduce((s,f)=>s+f.intensity,0)/allFlares.length).toFixed(1) : '—';
+  document.getElementById('m-avg').textContent = avg;
+  document.getElementById('m-flare').textContent = entries.filter(x => Object.keys(x.e.flareUps||{}).length).length;
+  const zc = {};
+  allFlares.forEach(f => { zc[f.name] = (zc[f.name]||0)+1; });
+  const top = Object.entries(zc).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('m-zone').textContent = top ? top[0] : '—';
+
+  renderIntChart(dates, all);
+  renderZoneChart(zc);
+  renderTriggerCorrelation(entries);
+  renderFoods(entries);
+}
+
+function renderIntChart(dates, all) {
+  const labels = dates.map(d => d.toLocaleDateString('en-GB', {day:'numeric',month:'short'}));
+  const data = dates.map(d => {
+    const e = all[dKey(d)];
+    if (!e) return null;
+    return avgIntensityForEntry(e);
+  });
+  if (iChart) iChart.destroy();
+  iChart = new Chart(document.getElementById('intensity-chart'), {
+    type: 'line',
+    data: { labels, datasets: [{ label: 'Avg intensity', data, borderColor: '#c9673c', backgroundColor: 'rgba(201,103,60,0.1)', borderWidth: 2, pointBackgroundColor: '#c9673c', pointRadius: 4, tension: 0.3, spanGaps: false, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { min:0, max:5, ticks: { stepSize:1, callback: v=>['','1','2','3','4','5'][v]||'' }, grid:{color:'rgba(128,128,128,0.1)'} },
+        x: { ticks:{font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:7}, grid:{display:false} }
+      },
+      plugins: { legend:{display:false} }
+    }
+  });
+}
+
+function renderZoneChart(zc) {
+  const sorted = Object.entries(zc).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  if (zChart) zChart.destroy();
+  if (!sorted.length) return;
+  zChart = new Chart(document.getElementById('zone-chart'), {
+    type: 'bar',
+    data: { labels: sorted.map(e=>e[0]), datasets: [{ label: 'Flare-ups', data: sorted.map(e=>e[1]), backgroundColor: '#3d6b4f', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: { y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'rgba(128,128,128,0.1)'}}, x:{ticks:{font:{size:10}},grid:{display:false}} },
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+// ── Trigger correlation ────────────────────────────────────────────────────
+function renderTriggerCorrelation(entries) {
+  // For each known trigger, find days it appeared and avg intensity vs days without
+  const triggerStats = [];
+
+  for (const trigger of ECZEMA_TRIGGERS) {
+    const withTrigger = [];
+    const withoutTrigger = [];
+    for (const {e} of entries) {
+      const text = allMealText(e);
+      const hasTrigger = trigger.keywords.some(kw => {
+        const re = new RegExp('(^|[\\s,;.(\\[])' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '($|[\\s,;.)\\]])', 'i');
+        return re.test(text);
+      });
+      const intensity = avgIntensityForEntry(e);
+      if (hasTrigger) { if (intensity !== null) withTrigger.push(intensity); }
+      else { if (intensity !== null) withoutTrigger.push(intensity); }
+    }
+    if (withTrigger.length > 0) {
+      const avgWith = withTrigger.reduce((s,v)=>s+v,0)/withTrigger.length;
+      const avgWithout = withoutTrigger.length ? withoutTrigger.reduce((s,v)=>s+v,0)/withoutTrigger.length : null;
+      triggerStats.push({ label: trigger.label, avgWith: +avgWith.toFixed(2), avgWithout: avgWithout !== null ? +avgWithout.toFixed(2) : null, days: withTrigger.length });
+    }
+  }
+
+  // Sort by avgWith descending
+  triggerStats.sort((a,b) => b.avgWith - a.avgWith);
+
+  const el = document.getElementById('trigger-corr');
+  if (!triggerStats.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--text3)">No known eczema triggers found in your logs for this period.</p>';
+    document.getElementById('trigger-chart-card').style.display = 'none';
+    return;
+  }
+
+  const maxAvg = Math.max(...triggerStats.map(t=>t.avgWith), 1);
+
+  el.innerHTML = triggerStats.map(t => {
+    const barPct = Math.round((t.avgWith / 5) * 100);
+    const diff = t.avgWithout !== null ? (t.avgWith - t.avgWithout) : null;
+    const isHigh = diff !== null && diff >= 0.5;
+    const diffStr = diff !== null ? (diff > 0 ? `+${diff.toFixed(1)} vs days without` : diff < 0 ? `${diff.toFixed(1)} vs days without` : 'same as days without') : 'no comparison data';
+    return `<div class="trigger-row">
+      <span class="trigger-name">${t.label}</span>
+      <div class="trigger-bar-wrap"><div class="trigger-bar" style="width:${barPct}%;background:${t.avgWith>=4?'#ef4444':t.avgWith>=3?'#ea580c':t.avgWith>=2?'#d97706':'#3d6b4f'}"></div></div>
+      <span class="trigger-count">${t.avgWith.toFixed(1)}/5</span>
+      ${isHigh ? `<span class="trigger-badge">⚠️ High</span>` : ''}
+    </div>
+    <div style="font-size:11px;color:var(--text3);padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:0">${t.days} day${t.days>1?'s':''} logged · ${diffStr}</div>`;
+  }).join('');
+
+  renderTriggerChart(triggerStats);
+}
+
+function renderTriggerChart(stats) {
+  const card = document.getElementById('trigger-chart-card');
+  // Only show top 8 that have comparison data
+  const data = stats.filter(t => t.avgWithout !== null).slice(0, 8);
+  if (!data.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  // Adjust chart height based on number of items
+  document.querySelector('#trigger-chart-card .chart-wrap').style.height = Math.max(160, data.length * 52) + 'px';
+
+  if (tChart) tChart.destroy();
+  tChart = new Chart(document.getElementById('trigger-chart'), {
+    type: 'bar',
+    data: {
+      labels: data.map(t => t.label),
+      datasets: [
+        { label: 'With trigger', data: data.map(t=>t.avgWith), backgroundColor: '#c9673c', borderRadius: 4 },
+        { label: 'Without trigger', data: data.map(t=>t.avgWithout), backgroundColor: '#3d6b4f', borderRadius: 4 },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { min:0, max:5, ticks:{stepSize:1,font:{size:10}}, grid:{color:'rgba(128,128,128,0.1)'} },
+        y: { ticks:{font:{size:11}}, grid:{display:false} }
+      },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font:{size:11}, boxWidth:12, padding:10 } }
+      }
+    }
+  });
+}
+
+function renderFoods(entries) {
+  const words = {};
+  const stop = new Set(['with','and','the','from','some','had','have','ate','drink','drank','little','just','also','some']);
+  entries.forEach(x => {
+    const m = x.e.meals||{};
+    ['breakfast','lunch','dinner','snacks'].forEach(k => {
+      (m[k]||'').toLowerCase().split(/[\s,;.]+/).forEach(w => {
+        w = w.trim();
+        if (w.length > 3 && !stop.has(w)) words[w] = (words[w]||0)+1;
+      });
+    });
+  });
+  const top = Object.entries(words).sort((a,b)=>b[1]-a[1]).slice(0,24);
+  const el = document.getElementById('food-cloud');
+  if (!top.length) { el.innerHTML = '<span style="font-size:13px;color:var(--text3)">No food logged yet.</span>'; return; }
+
+  // Mark known trigger words
+  const triggerWords = new Set();
+  ECZEMA_TRIGGERS.forEach(t => t.keywords.forEach(k => triggerWords.add(k)));
+
+  el.innerHTML = top.map(([w,c]) => {
+    const isTrigger = triggerWords.has(w);
+    return `<span class="food-pill${isTrigger?' trigger-pill':''}">${w}${isTrigger?' ⚠️':''} <span>${c}×</span></span>`;
+  }).join('');
+}
+
+// ── History ────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const all = getData();
+  const keys = Object.keys(all).sort().reverse();
+  const el = document.getElementById('history-list');
+  if (!keys.length) {
+    el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No entries yet.<br>Start with today's log!</p></div>`;
+    return;
+  }
+  el.innerHTML = keys.map(k => {
+    const d = all[k];
+    const date = new Date(k + 'T00:00:00');
+    const meals = d.meals||{};
+    const mealStr = [meals.breakfast, meals.lunch, meals.dinner, meals.snacks].filter(Boolean).join(' · ');
+    const fl = Object.values(d.flareUps||{});
+    const meds = d.medsTaken||[];
+    const cr = d.creams||[];
+    // detect triggers for this entry
+    const triggers = detectTriggers(allMealText(d));
+    return `<div class="hist-entry">
+      <div class="hist-date">${date.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+      ${mealStr ? `<div class="hist-row"><div class="hist-icon"><svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div><div class="hist-val">${mealStr.length>120?mealStr.slice(0,120)+'…':mealStr}${triggers.length?` <span style="font-size:11px;color:var(--warn)">⚠️ ${triggers.join(', ')}</span>`:''}</div></div>` : ''}
+      ${meds.length ? `<div class="hist-row"><div class="hist-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6M12 9v6"/></svg></div><div class="hist-val">${meds.join(', ')}</div></div>` : ''}
+      ${cr.length ? `<div class="hist-row"><div class="hist-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 4 6 4 10c0 6 8 12 8 12s8-6 8-12c0-4-4-8-8-8z"/></svg></div><div class="hist-val">${cr.join(', ')}</div></div>` : ''}
+      ${fl.length ? `<div class="hist-row"><div class="hist-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="hist-val">${fl.map(f=>`<span class="flare-badge fb-${f.intensity}">${f.name} ${f.intensity}/5</span>`).join('')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+setupTag('meds', 'meds-input');
+setupTag('creams', 'creams-input');
+updateLabel();
+loadDay();
+</script>
+</body>
+</html>
